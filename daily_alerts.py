@@ -1,11 +1,7 @@
 import os
-import time
+import math
 import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
+import time
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
@@ -14,40 +10,33 @@ def send(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
 
-send("🟢 CREX Monitor started\nChecking live matches...")
+# ---- Logistic regression coefficients ----
+A  = -3.5
+B1 = 0.45   # wickets remaining
+B2 = 0.015  # balls remaining
+B3 = -0.90  # required run rate
 
-# Chrome setup (headless)
-options = Options()
-options.add_argument("--headless")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
+def win_probability(wkts, balls, rrr):
+    z = A + (B1 * wkts) + (B2 * balls) + (B3 * rrr)
+    return 1 / (1 + math.exp(-z))
 
-driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()),
-    options=options
-)
+send("🟢 Win Probability Engine Running")
 
-try:
-    driver.get("https://crex.com/live-matches")
-    time.sleep(8)
+# ------------------------------------------------------------------
+# TEMP DEMO INPUT (this simulates a real 2nd innings situation)
+# Later this will be replaced by live score parsing
+# ------------------------------------------------------------------
 
-    matches = driver.find_elements(By.CSS_SELECTOR, "a.match-card")
+match_name = "BPL: TEAM A vs TEAM B"
+wickets_remaining = 8
+balls_remaining = 48
+required_run_rate = 6.2
 
-    if not matches:
-        send("ℹ️ No live matches currently")
-    else:
-        for match in matches[:5]:  # limit for safety
-            link = match.get_attribute("href")
-            driver.get(link)
-            time.sleep(8)
+p = win_probability(wickets_remaining, balls_remaining, required_run_rate)
+percent = int(p * 100)
 
-            page = driver.page_source.lower()
-
-            if "2nd innings" not in page:
-                continue
-
-            # TEMP placeholder (real prob parsing next step)
-            send("🟡 Live 2nd innings detected\nWaiting for probability logic")
-
-finally:
-    driver.quit()
+if percent >= 70:
+    send(
+        f"{match_name}\n"
+        f"TEAM A – {percent}% VS TEAM B – {100 - percent}%"
+    )
