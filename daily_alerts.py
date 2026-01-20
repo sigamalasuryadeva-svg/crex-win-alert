@@ -1,9 +1,8 @@
 import os
 import math
 import requests
-import re
 from bs4 import BeautifulSoup
-import requests
+import re
 
 # ---------- TELEGRAM SETTINGS ----------
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -12,8 +11,6 @@ CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 def send(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
-
-send("🟢 Win Probability Engine Running (Cricbuzz Live)")
 
 # ---------- LOGISTIC REGRESSION COEFFICIENTS ----------
 A  = -3.5
@@ -25,6 +22,8 @@ def win_probability(wkts, balls, rrr):
     z = A + (B1 * wkts) + (B2 * balls) + (B3 * rrr)
     return 1 / (1 + math.exp(-z))
 
+send("🟢 Win Probability Engine Running (Cricbuzz Live)")
+
 # ---------- ALERT MEMORY ----------
 alert_memory = set()  # store alerts sent to avoid duplicates
 
@@ -35,7 +34,7 @@ try:
     r = requests.get(CRICBUZZ_LIVE_URL)
     soup = BeautifulSoup(r.text, "html.parser")
 
-    # find all live match blocks
+    # find all live match links
     matches = soup.find_all("a", href=re.compile(r"/cricket-match/"))
 
     if not matches:
@@ -54,8 +53,8 @@ try:
             if "2nd innings" not in text:
                 continue
 
-            # ---------- EXTRACT SCORE ----------
-            score_match = re.search(r'(\d+)[-/](\d+)\s*\((\d+.\d+)\s*ov\)', text)
+            # ---------- EXTRACT SCORES ----------
+            score_match = re.search(r'(\d+)[-/](\d+)\s*\((\d+\.?\d*)\s*ov\)', text)
             target_match = re.search(r'target\s+(\d+)', text)
 
             if score_match and target_match:
@@ -66,7 +65,7 @@ try:
 
                 target = int(target_match.group(1))
                 runs_remaining = target - runs_scored
-                balls_remaining = 120 - balls_played  # assuming 20 overs match, adjust if needed
+                balls_remaining = max(0, 120 - balls_played)  # assuming 20 overs; adjust for other formats
 
                 wickets_remaining = 10 - wickets_fallen
                 rrr = (runs_remaining / balls_remaining) * 6 if balls_remaining > 0 else 999
