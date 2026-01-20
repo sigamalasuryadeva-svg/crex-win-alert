@@ -1,8 +1,8 @@
 import os
 import math
 import requests
-import time
 
+# Telegram secrets
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
@@ -10,7 +10,7 @@ def send(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
 
-# ---- Logistic regression coefficients ----
+# Logistic regression coefficients
 A  = -3.5
 B1 = 0.45   # wickets remaining
 B2 = 0.015  # balls remaining
@@ -20,13 +20,9 @@ def win_probability(wkts, balls, rrr):
     z = A + (B1 * wkts) + (B2 * balls) + (B3 * rrr)
     return 1 / (1 + math.exp(-z))
 
-send("🟢 Win Probability Engine Running")
+send("🟢 Cricket alert workflow started")
 
-# ------------------------------------------------------------------
-# TEMP DEMO INPUT (this simulates a real 2nd innings situation)
-# Later this will be replaced by live score parsing
-# ------------------------------------------------------------------
-
+# ---- TEMP DEMO VALUES (for testing pipeline) ----
 match_name = "BPL: TEAM A vs TEAM B"
 wickets_remaining = 8
 balls_remaining = 48
